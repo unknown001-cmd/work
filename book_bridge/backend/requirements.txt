@@ -1,0 +1,22 @@
+# ============================================================
+# 书桥 BOOKBRIDGE 后端依赖清单
+# 安装命令：pip install -r requirements.txt
+# ============================================================
+
+# Web 框架：FastAPI 异步高性能框架
+fastapi==0.115.0
+
+# ASGI 服务器：用于运行 FastAPI 应用
+uvicorn[standard]==0.30.6
+
+# ORM 框架：SQLAlchemy 2.0，提供数据库对象关系映射
+sqlalchemy==2.0.35
+
+# 数据校验：Pydantic v2，提供请求/响应数据模型校验
+pydantic==2.9.2
+
+# 密码哈希：用于用户密码的安全存储与校验
+passlib[bcrypt]==1.7.4
+
+# 日期时间处理：用于处理时区感知的日期时间
+python-dateutil==2.9.0

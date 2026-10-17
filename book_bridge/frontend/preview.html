@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<!--
+============================================================
+书桥 BOOKBRIDGE - 校园二手教材智能撮合平台
+============================================================
+单页应用（SPA）：纯原生 HTML5 + CSS3 + JavaScript（ES6+）
+通过 Fetch API 调用后端 RESTful 接口，前后端完全分离
+
+布局模块：
+  1. 顶部导航栏（Logo + 导航 + 操作按钮）
+  2. 首屏 Hero 区（标题 + 搜索框 + 热门标签）
+  3. 核心数据看板（3个统计卡片）
+  4. 右侧实时撮合卡片（LIVE 撮合记录）
+  5. 底部学科浏览板块
+============================================================
+-->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书桥 BOOKBRIDGE - 校园二手教材智能撮合平台</title>
+    <style>
+        /* ============================================================
+           全局样式重置与基础变量
+           ============================================================ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #2563eb;          /* 主蓝色 */
+            --primary-dark: #1e40af;      /* 深蓝色 */
+            --primary-light: #3b82f6;     /* 亮蓝色 */
+            --primary-bg: #eff6ff;        /* 浅蓝背景 */
+            --bg: #f1f5f9;                /* 页面背景 */
+            --card: #ffffff;              /* 卡片背景 */
+            --text: #1e293b;              /* 主文字 */
+            --text-light: #64748b;        /* 次要文字 */
+            --text-muted: #94a3b8;        /* 弱化文字 */
+            --border: #e2e8f0;            /* 边框色 */
+            --success: #10b981;           /* 成功绿 */
+            --warning: #f59e0b;           /* 警告橙 */
+            --danger: #ef4444;            /* 危险红 */
+            --radius: 12px;               /* 圆角 */
+            --shadow: 0 2px 8px rgba(0,0,0,0.06);       /* 轻阴影 */
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);   /* 中阴影 */
+            --shadow-lg: 0 8px 32px rgba(37,99,235,0.12); /* 大阴影 */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* ============================================================
+           1. 顶部导航栏
+           ============================================================ */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+        .navbar-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+            cursor: pointer;
+        }
+        .logo-icon {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 18px; font-weight: 900;
+        }
+        .logo-text { letter-spacing: 1px; }
+        .logo-text small { color: var(--text-muted); font-size: 11px; font-weight: 400; display: block; line-height: 1; }
+
+        .nav-links {
+            display: flex; gap: 28px; list-style: none;
+        }
+        .nav-links a {
+            text-decoration: none; color: var(--text-light);
+            font-size: 15px; font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active { color: var(--primary); }
+
+        .nav-actions { display: flex; align-items: center; gap: 12px; }
+        .btn-icon {
+            width: 38px; height: 38px; border: 1px solid var(--border);
+            background: var(--card); border-radius: 8px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; transition: all 0.2s; position: relative;
+        }
+        .btn-icon:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-icon .badge {
+            position: absolute; top: -4px; right: -4px;
+            background: var(--danger); color: #fff;
+            font-size: 10px; min-width: 16px; height: 16px;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            padding: 0 4px;
+        }
+        .btn {
+            padding: 8px 18px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-outline { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); box-shadow: var(--shadow-lg); }
+
+        /* ============================================================
+           2. Hero 区
+           ============================================================ */
+        .hero {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #e0e7ff 100%);
+            padding: 48px 32px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: ''; position: absolute; top: -60px; right: -60px;
+            width: 240px; height: 240px; border-radius: 50%;
+            background: rgba(37,99,235,0.06);
+        }
+        .hero::after {
+            content: ''; position: absolute; bottom: -80px; left: 20%;
+            width: 180px; height: 180px; border-radius: 50%;
+            background: rgba(59,130,246,0.05);
+        }
+        .hero-inner { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(37,99,235,0.1); color: var(--primary);
+            padding: 5px 14px; border-radius: 20px;
+            font-size: 13px; font-weight: 600; margin-bottom: 18px;
+        }
+        .hero-badge .dot {
+            width: 8px; height: 8px; background: var(--success);
+            border-radius: 50%; animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+        .hero h1 {
+            font-size: 42px; font-weight: 800; color: var(--text);
+            line-height: 1.3; margin-bottom: 14px; max-width: 680px;
+        }
+        .hero h1 span { color: var(--primary); }
+        .hero-sub {
+            font-size: 16px; color: var(--text-light); max-width: 600px;
+            margin-bottom: 28px; line-height: 1.7;
+        }
+
+        /* 搜索框 */
+        .search-box {
+            display: flex; gap: 0; max-width: 680px;
+            background: var(--card); border-radius: var(--radius);
+            box-shadow: var(--shadow-md); overflow: hidden;
+            border: 2px solid transparent; transition: border-color 0.2s;
+        }
+        .search-box:focus-within { border-color: var(--primary); }
+        .search-box input {
+            flex: 1; padding: 14px 20px; border: none; outline: none;
+            font-size: 15px; background: transparent;
+        }
+        .search-box button {
+            padding: 0 28px; background: var(--primary); color: #fff;
+            border: none; cursor: pointer; font-size: 15px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px; transition: background 0.2s;
+        }
+        .search-box button:hover { background: var(--primary-dark); }
+
+        /* 热门标签 */
+        .hot-tags { display: flex; align-items: center; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+        .hot-tags span { font-size: 13px; color: var(--text-muted); }
+        .hot-tags a {
+            font-size: 13px; color: var(--text-light); text-decoration: none;
+            padding: 4px 12px; background: rgba(255,255,255,0.7);
+            border-radius: 16px; transition: all 0.2s; border: 1px solid transparent;
+        }
+        .hot-tags a:hover { color: var(--primary); border-color: var(--primary); background: #fff; }
+
+        /* ============================================================
+           3. 主内容区（数据看板 + 实时撮合）
+           ============================================================ */
+        .main-content {
+            max-width: 1400px; margin: -24px auto 0; padding: 0 32px;
+            display: grid; grid-template-columns: 1fr 380px; gap: 24px;
+            position: relative; z-index: 2;
+        }
+
+        /* 数据看板 */
+        .stats-section { display: flex; flex-direction: column; gap: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .stat-card {
+            background: var(--card); border-radius: var(--radius);
+            padding: 24px; box-shadow: var(--shadow-md);
+            border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+        .stat-card .stat-icon {
+            width: 44px; height: 44px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; margin-bottom: 14px;
+        }
+        .stat-card .stat-value { font-size: 30px; font-weight: 800; color: var(--text); }
+        .stat-card .stat-value small { font-size: 16px; font-weight: 600; color: var(--text-light); }
+        .stat-card .stat-label { font-size: 14px; color: var(--text-light); margin-top: 4px; }
+        .stat-card .stat-trend { font-size: 12px; margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+        .stat-trend.up { color: var(--success); }
+        .stat-trend.down { color: var(--danger); }
+
+        .icon-blue { background: var(--primary-bg); color: var(--primary); }
+        .icon-green { background: #d1fae5; color: var(--success); }
+        .icon-orange { background: #fef3c7; color: var(--warning); }
+
+        /* 教材列表区 */
+        .section-card {
+            background: var(--card); border-radius: var(--radius);
+            box-shadow: var(--shadow-md); border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .section-header {
+            padding: 18px 24px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .section-title { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .section-title .tag {
+            font-size: 11px; background: var(--primary-bg); color: var(--primary);
+            padding: 2px 8px; border-radius: 10px; font-weight: 600;
+        }
+        .section-link { font-size: 13px; color: var(--primary); text-decoration: none; font-weight: 600; }
+        .section-link:hover { text-decoration: underline; }
+
+        .book-list { padding: 16px 24px; display: flex; flex-direction: column; gap: 12px; }
+        .book-item {
+            display: flex; align-items: center; gap: 16px;
+            padding: 14px; border-radius: 10px; border: 1px solid var(--border);
+            transition: all 0.2s; cursor: pointer;
+        }
+        .book-item:hover { border-color: var(--primary); background: var(--primary-bg); }
+        .book-cover {
+            width: 48px; height: 48px; border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 20px; font-weight: 700; flex-shrink: 0;
+        }
+        .book-info { flex: 1; min-width: 0; }
+        .book-info .book-title { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+        .book-info .book-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 10px; }
+        .book-price { font-size: 17px; font-weight: 800; color: var(--danger); white-space: nowrap; }
+        .book-type-badge {
+            font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 600;
+        }
+        .badge-sell { background: #d1fae5; color: var(--success); }
+        .badge-buy { background: #fef3c7; color: var(--warning); }
+
+        /* ============================================================
+           4. 右侧实时撮合卡片
+           ============================================================ */
+        .match-panel {
+            background: var(--card); border-radius: var(--radius);
+            box-shadow: var(--shadow-md); border: 1px solid var(--border);
+            overflow: hidden; align-self: start; position: sticky; top: 80px;
+        }
+        .match-header {
+            padding: 16px 20px; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff; display: flex; align-items: center; justify-content: space-between;
+        }
+        .match-header .title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .live-badge {
+            background: rgba(255,255,255,0.25); padding: 3px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 5px;
+        }
+        .live-dot { width: 7px; height: 7px; background: #fff; border-radius: 50%; animation: pulse 1.5s infinite; }
+        .match-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+        .match-item {
+            border: 1px solid var(--border); border-radius: 10px; padding: 14px;
+            transition: all 0.2s;
+        }
+        .match-item:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+        .match-item-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .match-user { display: flex; align-items: center; gap: 8px; }
+        .match-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 13px; font-weight: 700;
+        }
+        .match-username { font-size: 13px; font-weight: 600; }
+        .match-type { font-size: 11px; color: var(--text-muted); }
+        .match-book-name { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+        .match-details { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-light); }
+        .match-details .match-score {
+            color: var(--primary); font-weight: 700;
+        }
+        .match-suggest {
+            margin-top: 8px; padding: 6px 10px; background: var(--primary-bg);
+            border-radius: 6px; font-size: 12px; color: var(--primary-dark);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .match-suggest .price { font-weight: 800; font-size: 14px; }
+        .match-duration { font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: right; }
+
+        /* ============================================================
+           5. 底部学科浏览
+           ============================================================ */
+        .category-section { max-width: 1400px; margin: 32px auto; padding: 0 32px; }
+        .category-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 20px; }
+        .category-card {
+            background: var(--card); border-radius: var(--radius); padding: 24px 16px;
+            text-align: center; border: 1px solid var(--border); cursor: pointer;
+            transition: all 0.2s; box-shadow: var(--shadow);
+        }
+        .category-card:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+        .category-card .cat-icon { font-size: 32px; margin-bottom: 10px; }
+        .category-card .cat-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .category-card .cat-count { font-size: 12px; color: var(--text-muted); }
+
+        /* ============================================================
+           弹窗（发布教材 / 登录）
+           ============================================================ */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; z-index: 1000;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--card); border-radius: 16px; padding: 28px;
+            width: 480px; max-width: 90vw; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: modalIn 0.25s;
+        }
+        @keyframes modalIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal h3 { font-size: 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+        .modal .close-btn { cursor: pointer; font-size: 22px; color: var(--text-muted); }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+        .modal .btn-primary { width: 100%; justify-content: center; padding: 12px; margin-top: 8px; }
+
+        /* 提示消息 */
+        .toast {
+            position: fixed; top: 80px; right: 24px; z-index: 2000;
+            background: var(--text); color: #fff; padding: 12px 20px;
+            border-radius: 8px; font-size: 14px; box-shadow: var(--shadow-lg);
+            opacity: 0; transform: translateX(20px); transition: all 0.3s;
+        }
+        .toast.show { opacity: 1; transform: translateX(0); }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+
+        /* ============================================================
+           6. AI Agent 聊天浮窗
+           ============================================================ */
+        .agent-fab {
+            position: fixed; bottom: 28px; right: 28px; z-index: 900;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff; font-size: 28px; border: none; cursor: pointer;
+            box-shadow: 0 6px 24px rgba(37,99,235,0.35);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .agent-fab:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(37,99,235,0.45); }
+        .agent-fab .fab-pulse {
+            position: absolute; inset: 0; border-radius: 50%;
+            border: 2px solid var(--primary-light); animation: fabPulse 2s infinite;
+        }
+        @keyframes fabPulse { 0%{transform:scale(1);opacity:0.6;} 100%{transform:scale(1.4);opacity:0;} }
+
+        .agent-panel {
+            position: fixed; bottom: 100px; right: 28px; z-index: 910;
+            width: 420px; max-width: calc(100vw - 56px); height: 620px; max-height: calc(100vh - 140px);
+            background: var(--card); border-radius: 16px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.18); border: 1px solid var(--border);
+            display: none; flex-direction: column; overflow: hidden;
+            animation: panelIn 0.25s ease;
+        }
+        .agent-panel.show { display: flex; }
+        @keyframes panelIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .agent-header {
+            padding: 14px 18px; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+        }
+        .agent-header .title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .agent-header .mode-tag {
+            font-size: 10px; padding: 2px 8px; border-radius: 10px;
+            background: rgba(255,255,255,0.25); font-weight: 600;
+        }
+        .agent-header .actions { display: flex; gap: 6px; }
+        .agent-header .actions button {
+            width: 30px; height: 30px; border: none; background: rgba(255,255,255,0.15);
+            color: #fff; border-radius: 8px; cursor: pointer; font-size: 15px;
+            display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+        }
+        .agent-header .actions button:hover { background: rgba(255,255,255,0.3); }
+
+        .agent-messages {
+            flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px;
+            background: var(--bg);
+        }
+        .agent-messages::-webkit-scrollbar { width: 6px; }
+        .agent-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .msg { display: flex; flex-direction: column; gap: 4px; max-width: 90%; }
+        .msg.user { align-self: flex-end; align-items: flex-end; }
+        .msg.agent { align-self: flex-start; }
+
+        .msg-bubble {
+            padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6;
+            word-break: break-word; white-space: pre-wrap;
+        }
+        .msg.user .msg-bubble {
+            background: var(--primary); color: #fff; border-bottom-right-radius: 4px;
+        }
+        .msg.agent .msg-bubble {
+            background: var(--card); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px;
+        }
+        .msg-bubble strong { font-weight: 700; }
+
+        .msg-steps {
+            font-size: 12px; color: var(--text-muted); margin-top: 4px;
+            border-left: 2px solid var(--border); padding-left: 10px;
+        }
+        .msg-steps summary { cursor: pointer; font-weight: 600; color: var(--text-light); user-select: none; }
+        .msg-steps .step-item { margin: 4px 0; padding: 2px 0; }
+        .msg-steps .step-icon { display: inline-block; width: 18px; text-align: center; }
+        .step-think { color: var(--text-muted); }
+        .step-tool { color: var(--primary); font-weight: 600; }
+        .step-obs { color: var(--success); }
+
+        .agent-typing {
+            align-self: flex-start; display: flex; gap: 4px; padding: 12px 16px;
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+        }
+        .agent-typing span {
+            width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted);
+            animation: typing 1.2s infinite;
+        }
+        .agent-typing span:nth-child(2) { animation-delay: 0.2s; }
+        .agent-typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%,60%,100%{opacity:0.3;transform:translateY(0);} 30%{opacity:1;transform:translateY(-4px);} }
+
+        .agent-input-area {
+            padding: 12px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; background: var(--card);
+        }
+        .agent-input-area input {
+            flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px;
+            font-size: 14px; outline: none; transition: border-color 0.2s;
+        }
+        .agent-input-area input:focus { border-color: var(--primary); }
+        .agent-input-area button {
+            padding: 0 18px; border: none; border-radius: 10px;
+            background: var(--primary); color: #fff; font-size: 15px; cursor: pointer;
+            display: flex; align-items: center; transition: background 0.2s;
+        }
+        .agent-input-area button:hover { background: var(--primary-dark); }
+        .agent-input-area button:disabled { background: var(--text-muted); cursor: not-allowed; }
+
+        .agent-welcome {
+            text-align: center; padding: 20px; color: var(--text-light); font-size: 13px; line-height: 1.8;
+        }
+        .agent-welcome .icon { font-size: 40px; margin-bottom: 8px; }
+        .agent-welcome .hint { margin-top: 10px; font-size: 12px; color: var(--text-muted); }
+        .agent-welcome .quick-btns { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 12px; }
+        .agent-welcome .quick-btns button {
+            padding: 5px 12px; border: 1px solid var(--border); border-radius: 16px;
+            background: var(--card); color: var(--text-light); font-size: 12px; cursor: pointer; transition: all 0.2s;
+        }
+        .agent-welcome .quick-btns button:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* 响应式 */
+        @media (max-width: 1024px) {
+            .main-content { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .category-grid { grid-template-columns: repeat(3, 1fr); }
+            .match-panel { position: static; }
+        }
+        @media (max-width: 640px) {
+            .nav-links { display: none; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .category-grid { grid-template-columns: repeat(2, 1fr); }
+            .hero h1 { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+         1. 顶部导航栏
+         ============================================================ -->
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <div class="logo" onclick="scrollToTop()">
+                <div class="logo-icon">桥</div>
+                <div class="logo-text">书桥<small>BOOKBRIDGE</small></div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#" class="active" onclick="navClick(event,'home')">首页</a></li>
+                <li><a href="#" onclick="navClick(event,'category')">教材分类</a></li>
+                <li><a href="#" onclick="navClick(event,'featured')">精选教材</a></li>
+                <li><a href="#" onclick="navClick(event,'match')">撮合机制</a></li>
+                <li><a href="#" onclick="navClick(event,'reviews')">用户评价</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="btn-icon" title="消息">🔔<span class="badge">3</span></button>
+                <button class="btn btn-outline" onclick="showLoginModal()">登录</button>
+                <button class="btn btn-primary" onclick="showPublishModal()">📚 发布教材</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ============================================================
+         2. Hero 区
+         ============================================================ -->
+    <section class="hero">
+        <div class="hero-inner">
+            <div class="hero-badge">
+                <span class="dot"></span> AI 撮合引擎 v3.2 · 已上线
+            </div>
+            <h1>让每本教材都找到<span>下一位主人</span></h1>
+            <p class="hero-sub">
+                基于课程匹配、价格画像与信用评分的智能撮合算法，为校园二手教材交易提供高效、安全、可信赖的撮合服务
+            </p>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索教材 / ISBN / 课程名称..." onkeydown="if(event.key==='Enter') doSearch()">
+                <button onclick="doSearch()">🔍 智能搜索</button>
+            </div>
+            <div class="hot-tags">
+                <span>热门搜索：</span>
+                <a href="#" onclick="quickSearch(event,'高等数学')">高等数学</a>
+                <a href="#" onclick="quickSearch(event,'数据结构')">数据结构</a>
+                <a href="#" onclick="quickSearch(event,'线性代数')">线性代数</a>
+                <a href="#" onclick="quickSearch(event,'微观经济学')">微观经济学</a>
+                <a href="#" onclick="quickSearch(event,'大学物理')">大学物理</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         3. 主内容区（数据看板 + 实时撮合）
+         ============================================================ -->
+    <div class="main-content">
+        <!-- 左侧：数据看板 + 教材列表 -->
+        <div class="stats-section">
+            <!-- 核心数据看板 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon icon-blue">📖</div>
+                    <div class="stat-value" id="statBooks">--<small> 本</small></div>
+                    <div class="stat-label">在售教材数</div>
+                    <div class="stat-trend up">↑ 较昨日 +12%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon icon-green">✅</div>
+                    <div class="stat-value" id="statRate">--<small> %</small></div>
+                    <div class="stat-label">撮合成功率</div>
+                    <div class="stat-trend up">↑ 较上周 +5.2%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon icon-orange">💰</div>
+                    <div class="stat-value" id="statPrice">--<small> 元</small></div>
+                    <div class="stat-label">平均成交价</div>
+                    <div class="stat-trend down">↓ 较上月 -3.8%</div>
+                </div>
+            </div>
+
+            <!-- 精选教材列表 -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-title">精选教材 <span class="tag">推荐</span></div>
+                    <a href="#" class="section-link" onclick="loadAllBooks(event)">查看全部 →</a>
+                </div>
+                <div class="book-list" id="bookList">
+                    <div style="text-align:center;padding:30px;color:var(--text-muted);">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：实时撮合卡片 -->
+        <div class="match-panel">
+            <div class="match-header">
+                <div class="title">⚡ 实时撮合中</div>
+                <div class="live-badge"><span class="live-dot"></span> LIVE</div>
+            </div>
+            <div class="match-body" id="matchList">
+                <div style="text-align:center;padding:20px;color:var(--text-muted);">加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         4. 底部学科浏览
+         ============================================================ -->
+    <section class="category-section">
+        <div class="section-header" style="border:none;">
+            <div class="section-title">按学科浏览教材</div>
+            <a href="#" class="section-link" onclick="loadAllBooks(event)">查看全部分类 →</a>
+        </div>
+        <div class="category-grid" id="categoryGrid">
+            <div class="category-card" onclick="filterByCategory('数学')">
+                <div class="cat-icon">📐</div><div class="cat-name">数学</div><div class="cat-count">-- 本</div>
+            </div>
+            <div class="category-card" onclick="filterByCategory('计算机')">
+                <div class="cat-icon">💻</div><div class="cat-name">计算机</div><div class="cat-count">-- 本</div>
+            </div>
+            <div class="category-card" onclick="filterByCategory('经济学')">
+                <div class="cat-icon">📊</div><div class="cat-name">经济学</div><div class="cat-count">-- 本</div>
+            </div>
+            <div class="category-card" onclick="filterByCategory('物理')">
+                <div class="cat-icon">⚛️</div><div class="cat-name">物理</div><div class="cat-count">-- 本</div>
+            </div>
+            <div class="category-card" onclick="filterByCategory('化学')">
+                <div class="cat-icon">🧪</div><div class="cat-name">化学</div><div class="cat-count">-- 本</div>
+            </div>
+            <div class="category-card" onclick="filterByCategory('外语')">
+                <div class="cat-icon">🌐</div><div class="cat-name">外语</div><div class="cat-count">-- 本</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         弹窗：发布教材
+         ============================================================ -->
+    <div class="modal-overlay" id="publishModal">
+        <div class="modal">
+            <h3>📚 发布教材 <span class="close-btn" onclick="closeModal('publishModal')">×</span></h3>
+            <div class="form-group">
+                <label>发布类型</label>
+                <select id="pubType">
+                    <option value="sell">出售教材</option>
+                    <option value="buy">求购教材</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>教材名称</label>
+                <input type="text" id="pubTitle" placeholder="如：高等数学（第七版）">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>作者</label>
+                    <input type="text" id="pubAuthor" placeholder="如：同济大学">
+                </div>
+                <div class="form-group">
+                    <label>ISBN</label>
+                    <input type="text" id="pubIsbn" placeholder="选填">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>课程名称</label>
+                    <input type="text" id="pubCourse" placeholder="如：高等数学">
+                </div>
+                <div class="form-group">
+                    <label>学科分类</label>
+                    <select id="pubCategory">
+                        <option value="数学">数学</option>
+                        <option value="计算机">计算机</option>
+                        <option value="经济学">经济学</option>
+                        <option value="物理">物理</option>
+                        <option value="化学">化学</option>
+                        <option value="外语">外语</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label id="priceLabel">标价（元）</label>
+                    <input type="number" id="pubPrice" placeholder="如：35.00" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>成色</label>
+                    <select id="pubCondition">
+                        <option value="全新">全新</option>
+                        <option value="九成新">九成新</option>
+                        <option value="八成新">八成新</option>
+                        <option value="七成新">七成新</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>详细描述</label>
+                <textarea id="pubDesc" rows="2" placeholder="选填，如：有少量笔记，内容完整"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="submitPublish()">确认发布</button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         弹窗：登录
+         ============================================================ -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal">
+            <h3>🔐 用户登录 <span class="close-btn" onclick="closeModal('loginModal')">×</span></h3>
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="loginUser" placeholder="输入用户名">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="loginPass" placeholder="输入密码">
+            </div>
+            <button class="btn btn-primary" onclick="submitLogin()">登录</button>
+            <p style="text-align:center;margin-top:14px;font-size:13px;color:var(--text-muted);">
+                演示账号：张明轩 / 95
+            </p>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         AI Agent 聊天浮窗
+         ============================================================ -->
+    <button class="agent-fab" onclick="toggleAgentPanel()" title="AI 助手">
+        🤖<span class="fab-pulse"></span>
+    </button>
+    <div class="agent-panel" id="agentPanel">
+        <div class="agent-header">
+            <div class="title">🤖 书桥 AI 助手 <span class="mode-tag" id="agentModeTag">离线模式</span></div>
+            <div class="actions">
+                <button onclick="clearAgentMemory()" title="清除对话记忆">🗑</button>
+                <button onclick="toggleAgentPanel()" title="关闭">×</button>
+            </div>
+        </div>
+        <div class="agent-messages" id="agentMessages">
+            <div class="agent-welcome">
+                <div class="icon">🤖</div>
+                <div>你好！我是书桥 AI 助手<br>可以帮你搜索教材、查看撮合、了解平台数据等</div>
+                <div class="hint">试试以下问题：</div>
+                <div class="quick-btns">
+                    <button onclick="agentQuickAsk('帮我找高等数学的教材')">找高等数学</button>
+                    <button onclick="agentQuickAsk('平台统计数据')">平台统计</button>
+                    <button onclick="agentQuickAsk('查看撮合记录')">撮合记录</button>
+                    <button onclick="agentQuickAsk('有哪些学科分类')">学科分类</button>
+                    <button onclick="agentQuickAsk('执行撮合')">执行撮合</button>
+                </div>
+            </div>
+        </div>
+        <div class="agent-input-area">
+            <input type="text" id="agentInput" placeholder="输入消息，按 Enter 发送..." onkeydown="if(event.key==='Enter') sendAgentMessage()">
+            <button id="agentSendBtn" onclick="sendAgentMessage()">发送</button>
+        </div>
+    </div>
+
+    <!-- 提示消息容器 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ============================================================
+         JavaScript 业务逻辑
+         ============================================================ -->
+    <script>
+        // ============================================================
+        // 自包含预览模式：数据内嵌，无需后端服务
+        // ============================================================
+        const MOCK_DATA = {"stats": {"total_books": 6, "match_success_rate": 4.5, "avg_deal_price": 27.9}, "realtime": {"total": 66, "items": [{"match_id": 66, "match_type": "求购", "username": "王浩然", "book_title": "大学物理（第三版）", "course_name": "大学物理", "price": 20.0, "price_label": "预算", "match_score": 0.5325, "suggested_price": 20.93, "duration_ms": 0, "credit_score": 76.0}, {"match_id": 66, "match_type": "出售", "username": "李思琪", "book_title": "离散数学", "course_name": "离散数学", "price": 22.0, "price_label": "标价", "match_score": 0.5325, "suggested_price": 20.93, "duration_ms": 0, "credit_score": 88.0}, {"match_id": 64, "match_type": "求购", "username": "王浩然", "book_title": "大学物理（第三版）", "course_name": "大学物理", "price": 20.0, "price_label": "预算", "match_score": 0.4476, "suggested_price": 24.72, "duration_ms": 0, "credit_score": 76.0}, {"match_id": 64, "match_type": "出售", "username": "陈嘉怡", "book_title": "微观经济学", "course_name": "微观经济学", "price": 30.0, "price_label": "标价", "match_score": 0.4476, "suggested_price": 24.72, "duration_ms": 0, "credit_score": 85.0}]}, "categories": [{"category": "数学", "count": 4}, {"category": "物理", "count": 2}, {"category": "经济学", "count": 1}, {"category": "计算机", "count": 3}], "books_all": {"total": 10, "page": 1, "page_size": 50, "items": [{"id": 10, "user_id": 3, "username": "王浩然", "title": "大学物理（第三版）", "author": "程守洙", "isbn": "9787040265688", "course_name": "大学物理", "category": "物理", "price": 20.0, "book_type": "buy", "condition": "不限", "description": "急需大学物理（第三版），预算20.0元以内，不限。", "status": "active", "created_at": "2026-10-14T17:34:40.777616"}, {"id": 9, "user_id": 5, "username": "陈嘉怡", "title": "线性代数（第六版）", "author": "同济大学数学系", "isbn": "9787040507541", "course_name": "线性代数", "category": "数学", "price": 25.0, "book_type": "buy", "condition": "不限", "description": "急需线性代数（第六版），预算25.0元以内，不限。", "status": "active", "created_at": "2026-10-14T17:34:40.777615"}, {"id": 7, "user_id": 3, "username": "王浩然", "title": "高等数学（第七版）", "author": "同济大学数学系", "isbn": "9787040396631", "course_name": "高等数学", "category": "数学", "price": 40.0, "book_type": "buy", "condition": "不限", "description": "急需高等数学（第七版），预算40.0元以内，不限。", "status": "active", "created_at": "2026-10-14T17:34:40.777614"}, {"id": 8, "user_id": 4, "username": "赵雨桐", "title": "数据结构（C语言版）", "author": "严蔚敏", "isbn": "9787302023645", "course_name": "数据结构", "category": "计算机", "price": 30.0, "book_type": "buy", "condition": "八成新以上", "description": "急需数据结构（C语言版），预算30.0元以内，八成新以上。", "status": "active", "created_at": "2026-10-14T17:34:40.777614"}, {"id": 6, "user_id": 2, "username": "李思琪", "title": "离散数学", "author": "屈婉玲", "isbn": "9787040270223", "course_name": "离散数学", "category": "计算机", "price": 22.0, "book_type": "sell", "condition": "七成新", "description": "离散数学，七成新，有少量笔记，内容完整无缺页。", "status": "active", "created_at": "2026-10-14T17:34:40.777613"}, {"id": 4, "user_id": 5, "username": "陈嘉怡", "title": "微观经济学", "author": "高鸿业", "isbn": "9787300252857", "course_name": "微观经济学", "category": "经济学", "price": 30.0, "book_type": "sell", "condition": "九成新", "description": "微观经济学，九成新，有少量笔记，内容完整无缺页。", "status": "active", "created_at": "2026-10-14T17:34:40.777612"}, {"id": 5, "user_id": 1, "username": "张明轩", "title": "大学物理（第三版）", "author": "程守洙", "isbn": "9787040265688", "course_name": "大学物理", "category": "物理", "price": 25.0, "book_type": "sell", "condition": "八成新", "description": "大学物理（第三版），八成新，有少量笔记，内容完整无缺页。", "status": "active", "created_at": "2026-10-14T17:34:40.777612"}, {"id": 3, "user_id": 4, "username": "赵雨桐", "title": "线性代数（第六版）", "author": "同济大学数学系", "isbn": "9787040507541", "course_name": "线性代数", "category": "数学", "price": 20.0, "book_type": "sell", "condition": "全新", "description": "线性代数（第六版），全新，有少量笔记，内容完整无缺页。", "status": "active", "created_at": "2026-10-14T17:34:40.777611"}, {"id": 2, "user_id": 2, "username": "李思琪", "title": "数据结构（C语言版）", "author": "严蔚敏", "isbn": "9787302023645", "course_name": "数据结构", "category": "计算机", "price": 28.0, "book_type": "sell", "condition": "八成新", "description": "数据结构（C语言版），八成新，有少量笔记，内容完整无缺页。", "status": "active", "created_at": "2026-10-14T17:34:40.777610"}, {"id": 1, "user_id": 1, "username": "张明轩", "title": "高等数学（第七版）", "author": "同济大学数学系", "isbn": "9787040396631", "course_name": "高等数学", "category": "数学", "price": 35.0, "book_type": "sell", "condition": "九成新", "description": "高等数学（第七版），九成新，有少量笔记，内容完整无缺页。", "status": "active", "created_at": "2026-10-14T17:34:40.777608"}]}, "match_records": {"total": 66, "page": 1, "page_size": 10, "items": [{"id": 8, "buy_book_id": 8, "sell_book_id": 2, "buy_book_title": "数据结构（C语言版）", "sell_book_title": "数据结构（C语言版）", "buy_username": "赵雨桐", "sell_username": "李思琪", "match_score": 0.968, "suggested_price": 28.98, "status": "completed", "duration_ms": 0, "created_at": "2026-10-14T17:34:40.812118"}, {"id": 30, "buy_book_id": 8, "sell_book_id": 2, "buy_book_title": "数据结构（C语言版）", "sell_book_title": "数据结构（C语言版）", "buy_username": "赵雨桐", "sell_username": "李思琪", "match_score": 0.968, "suggested_price": 28.98, "status": "pending", "duration_ms": 0, "created_at": "2026-10-16T10:52:09.763054"}, {"id": 52, "buy_book_id": 8, "sell_book_id": 2, "buy_book_title": "数据结构（C语言版）", "sell_book_title": "数据结构（C语言版）", "buy_username": "赵雨桐", "sell_username": "李思琪", "match_score": 0.968, "suggested_price": 28.98, "status": "pending", "duration_ms": 0, "created_at": "2026-10-16T11:07:36.487640"}, {"id": 1, "buy_book_id": 7, "sell_book_id": 1, "buy_book_title": "高等数学（第七版）", "sell_book_title": "高等数学（第七版）", "buy_username": "王浩然", "sell_username": "张明轩", "match_score": 0.9506, "suggested_price": 37.78, "status": "completed", "duration_ms": 0, "created_at": "2026-10-14T17:34:40.812112"}, {"id": 23, "buy_book_id": 7, "sell_book_id": 1, "buy_book_title": "高等数学（第七版）", "sell_book_title": "高等数学（第七版）", "buy_username": "王浩然", "sell_username": "张明轩", "match_score": 0.9506, "suggested_price": 37.78, "status": "pending", "duration_ms": 0, "created_at": "2026-10-16T10:52:09.763054"}, {"id": 45, "buy_book_id": 7, "sell_book_id": 1, "buy_book_title": "高等数学（第七版）", "sell_book_title": "高等数学（第七版）", "buy_username": "王浩然", "sell_username": "张明轩", "match_score": 0.9506, "suggested_price": 37.78, "status": "pending", "duration_ms": 0, "created_at": "2026-10-16T11:07:36.487626"}, {"id": 14, "buy_book_id": 9, "sell_book_id": 3, "buy_book_title": "线性代数（第六版）", "sell_book_title": "线性代数（第六版）", "buy_username": "陈嘉怡", "sell_username": "赵雨桐", "match_score": 0.9503, "suggested_price": 22.6, "status": "completed", "duration_ms": 0, "created_at": "2026-10-14T17:34:40.812121"}, {"id": 36, "buy_book_id": 9, "sell_book_id": 3, "buy_book_title": "线性代数（第六版）", "sell_book_title": "线性代数（第六版）", "buy_username": "陈嘉怡", "sell_username": "赵雨桐", "match_score": 0.9503, "suggested_price": 22.6, "status": "pending", "duration_ms": 0, "created_at": "2026-10-16T10:52:09.763054"}, {"id": 58, "buy_book_id": 9, "sell_book_id": 3, "buy_book_title": "线性代数（第六版）", "sell_book_title": "线性代数（第六版）", "buy_username": "陈嘉怡", "sell_username": "赵雨桐", "match_score": 0.9503, "suggested_price": 22.6, "status": "pending", "duration_ms": 0, "created_at": "2026-10-16T11:07:36.487643"}, {"id": 21, "buy_book_id": 10, "sell_book_id": 5, "buy_book_title": "大学物理（第三版）", "sell_book_title": "大学物理（第三版）", "buy_username": "王浩然", "sell_username": "张明轩", "match_score": 0.815, "suggested_price": 22.22, "status": "pending", "duration_ms": 0, "created_at": "2026-10-14T17:34:40.812124"}]}, "agent_replies": {"帮我找高等数学的教材": {"reply": "共找到 **2** 本教材，以下是部分结果：\n\n• 《高等数学（第七版）》｜同济大学数学系｜高等数学｜求购｜预算 ¥40.0｜不限\n• 《高等数学（第七版）》｜同济大学数学系｜高等数学｜出售｜标价 ¥35.0｜九成新", "steps": [{"type": "think", "content": "识别用户意图：search_books（离线规则引擎模式，未配置 LLM API Key）"}, {"type": "tool_call", "tool": "search_books", "args": {"keyword": "高等数学"}}, {"type": "observation", "content": "搜索\"高等数学\"找到 2 条结果"}], "mode": "rule_engine"}, "平台统计数据": {"reply": "📊 **平台数据概况**\n\n• 在售教材总数：**6** 本\n• 撮合成功率：**4.5** %\n• 平均成交价：**¥27.9**\n\n平台运行良好，撮合算法持续为买卖双方寻找最优匹配。", "steps": [{"type": "think", "content": "识别用户意图：view_stats（离线规则引擎模式，未配置 LLM API Key）"}, {"type": "tool_call", "tool": "get_stats", "args": {}}, {"type": "observation", "content": "获取到统计数据：{'total_books': 6, 'match_success_rate': 4.5, 'avg_deal_price': 27.9}"}], "mode": "rule_engine"}, "查看撮合记录": {"reply": "共 **66** 条撮合记录，按匹配度排序：\n\n• 《数据结构（C语言版）》↔ 《数据结构（C语言版）》\n  求购方：赵雨桐 ｜ 出售方：李思琪\n  匹配度：96.8% ｜ 建议成交价：¥28.98 ｜ 状态：completed\n• 《数据结构（C语言版）》↔ 《数据结构（C语言版）》\n  求购方：赵雨桐 ｜ 出售方：李思琪\n  匹配度：96.8% ｜ 建议成交价：¥28.98 ｜ 状态：pending\n• 《数据结构（C语言版）》↔ 《数据结构（C语言版）》\n  求购方：赵雨桐 ｜ 出售方：李思琪\n  匹配度：96.8% ｜ 建议成交价：¥28.98 ｜ 状态：pending\n• 《高等数学（第七版）》↔ 《高等数学（第七版）》\n  求购方：王浩然 ｜ 出售方：张明轩\n  匹配度：95.1% ｜ 建议成交价：¥37.78 ｜ 状态：completed\n• 《高等数学（第七版）》↔ 《高等数学（第七版）》\n  求购方：王浩然 ｜ 出售方：张明轩\n  匹配度：95.1% ｜ 建议成交价：¥37.78 ｜ 状态：pending", "steps": [{"type": "think", "content": "识别用户意图：view_matching（离线规则引擎模式，未配置 LLM API Key）"}, {"type": "tool_call", "tool": "get_match_records", "args": {"page": 1, "page_size": 5}}, {"type": "observation", "content": "获取到 66 条撮合记录"}], "mode": "rule_engine"}, "有哪些学科分类": {"reply": "📚 **学科分类及教材数量**：\n\n• 数学：4 本\n• 物理：2 本\n• 经济学：1 本\n• 计算机：3 本", "steps": [{"type": "think", "content": "识别用户意图：view_categories（离线规则引擎模式，未配置 LLM API Key）"}, {"type": "tool_call", "tool": "get_categories", "args": {}}, {"type": "observation", "content": "获取到分类数据：{'categories': [{'category': '数学', 'count': 4}, {'category': '物理', 'count': 2}, {'category': '经济学', 'count': 1}, {'category': '计算机', 'count': 3}]}"}], "mode": "rule_engine"}, "执行撮合": {"reply": "⚡ 撮合算法执行完成！\n\n• 计算匹配对数：**22**\n• 生成撮合记录：**22** 条\n\n可以问我\"查看撮合记录\"来查看匹配结果。", "steps": [{"type": "think", "content": "识别用户意图：run_matching（离线规则引擎模式，未配置 LLM API Key）"}, {"type": "tool_call", "tool": "run_matching", "args": {"min_score": 0.3}}, {"type": "observation", "content": "撮合完成：{'message': '撮合完成', 'total_pairs': 22, 'saved': 22}"}], "mode": "rule_engine"}, "帮我找数据结构": {"reply": "共找到 **2** 本教材，以下是部分结果：\n\n• 《数据结构（C语言版）》｜严蔚敏｜数据结构｜求购｜预算 ¥30.0｜八成新以上\n• 《数据结构（C语言版）》｜严蔚敏｜数据结构｜出售｜标价 ¥28.0｜八成新", "steps": [{"type": "think", "content": "识别用户意图：search_books（离线规则引擎模式，未配置 LLM API Key）"}, {"type": "tool_call", "tool": "search_books", "args": {"keyword": "数据结构"}}, {"type": "observation", "content": "搜索\"数据结构\"找到 2 条结果"}], "mode": "rule_engine"}, "列出所有计算机类的教材": {"reply": "共找到 **3** 本教材，以下是部分结果：\n\n• 《数据结构（C语言版）》｜严蔚敏｜数据结构｜求购｜预算 ¥30.0｜八成新以上\n• 《离散数学》｜屈婉玲｜离散数学｜出售｜标价 ¥22.0｜七成新\n• 《数据结构（C语言版）》｜严蔚敏｜数据结构｜出售｜标价 ¥28.0｜八成新", "steps": [{"type": "think", "content": "识别用户意图：list_books（离线规则引擎模式，未配置 LLM API Key）"}, {"type": "tool_call", "tool": "list_books", "args": {"page": 1, "page_size": 8, "category": "计算机"}}, {"type": "observation", "content": "查询教材列表（分类=计算机，类型=全部），共 3 本"}], "mode": "rule_engine"}, "你好": {"reply": "你好！我是书桥 AI 助手 🤖\n\n我可以帮你：\n• 搜索和查看教材信息\n• 查看撮合记录和平台统计数据\n• 执行撮合算法\n• 发布教材（出售/求购）\n• 查询用户信息和信用分\n\n请问有什么可以帮你的？", "steps": [{"type": "think", "content": "识别用户意图：greeting（离线规则引擎模式，未配置 LLM API Key）"}], "mode": "rule_engine"}}};
+
+        let currentUser = null;
+
+        async function apiGet(path) {
+            const url = new URL(path, 'http://localhost');
+            const p = url.pathname.replace(/\/$/, '');
+            const q = url.searchParams;
+            if (p === '/api/match/stats') return {code:200, message:'success', data: MOCK_DATA.stats};
+            if (p === '/api/match/realtime') {
+                const limit = parseInt(q.get('limit')||'2');
+                return {code:200, message:'success', data:{total:MOCK_DATA.realtime.total, items:MOCK_DATA.realtime.items.slice(0, limit*2)}};
+            }
+            if (p === '/api/match/records') return {code:200, message:'success', data: MOCK_DATA.match_records};
+            if (p === '/api/books/categories/all') return {code:200, message:'success', data: MOCK_DATA.categories};
+            if (p === '/api/books/search') {
+                const kw = (q.get('keyword')||'').toLowerCase();
+                const ps = parseInt(q.get('page_size')||'10');
+                let items = MOCK_DATA.books_all.items.filter(b =>
+                    (b.title||'').toLowerCase().includes(kw) ||
+                    (b.isbn||'').toLowerCase().includes(kw) ||
+                    (b.course_name||'').toLowerCase().includes(kw) ||
+                    (b.author||'').toLowerCase().includes(kw)
+                );
+                return {code:200, message:'success', data:{total:items.length, page:1, page_size:ps, items:items.slice(0, ps)}};
+            }
+            const m = p.match(/^\/api\/books\/(\d+)$/);
+            if (m) {
+                const b = MOCK_DATA.books_all.items.find(x => x.id === parseInt(m[1]));
+                return b ? {code:200, message:'success', data:b} : {code:404, message:'教材不存在', data:null};
+            }
+            if (p === '/api/books') {
+                const page = parseInt(q.get('page')||'1');
+                const ps = parseInt(q.get('page_size')||'10');
+                const cat = q.get('category');
+                const bt = q.get('book_type');
+                let items = MOCK_DATA.books_all.items.filter(b => b.status==='active');
+                if (cat) items = items.filter(b => b.category === cat);
+                if (bt) items = items.filter(b => b.book_type === bt);
+                return {code:200, message:'success', data:{total:items.length, page, page_size:ps, items:items.slice((page-1)*ps, (page-1)*ps+ps)}};
+            }
+            if (p === '/api/health') return {code:200, message:'success', data:{status:'running'}};
+            if (p === '/api/agent/status') return {code:200, message:'success', data:{mode:'rule_engine', llm_available:false, tool_count:10, active_sessions:1, description:'离线规则引擎模式'}};
+            if (p === '/api/agent/tools') return {code:200, message:'success', data:{tools:[], count:10}};
+            return {code:404, message:'not found', data:null};
+        }
+        async function apiPost(path, body) {
+            if (path === '/api/users/login') {
+                if (body.username === '张明轩' && body.password === '95')
+                    return {code:200, message:'登录成功', data:{user_id:1, username:'张明轩', credit_score:95.0}};
+                return {code:400, message:'用户名或密码错误', data:null};
+            }
+            if (path === '/api/books') {
+                const nb = Object.assign({}, body, {id: Date.now(), username:'张明轩', status:'active', created_at:new Date().toISOString()});
+                MOCK_DATA.books_all.items.unshift(nb);
+                if (nb.book_type === 'sell') MOCK_DATA.stats.total_books += 1;
+                return {code:200, message:'发布成功', data:nb};
+            }
+            if (path === '/api/agent/chat') {
+                return {code:200, reply: agentLocalReply(body.message), steps: agentLocalSteps(body.message), mode:'rule_engine', rounds:1};
+            }
+            if (path === '/api/agent/clear') return {code:200, message:'success', data:{session_id:body.session_id}};
+            return {code:200, message:'success', data:body};
+        }
+        function agentLocalReply(msg) {
+            const replies = MOCK_DATA.agent_replies;
+            for (const q in replies) {
+                if (msg.includes(q) || q.includes(msg)) return replies[q].reply;
+            }
+            if (msg.includes('搜索')||msg.includes('找')||msg.includes('搜')) {
+                for (const q in replies) { if (q.includes('找')) return replies[q].reply; }
+            }
+            if (msg.includes('统计')||msg.includes('数据')||msg.includes('概况')) {
+                for (const q in replies) { if (q.includes('统计')) return replies[q].reply; }
+            }
+            if (msg.includes('撮合记录')||msg.includes('匹配记录')) {
+                for (const q in replies) { if (q.includes('撮合记录')) return replies[q].reply; }
+            }
+            if (msg.includes('分类')||msg.includes('学科')) {
+                for (const q in replies) { if (q.includes('分类')) return replies[q].reply; }
+            }
+            if (msg.includes('撮合')||msg.includes('执行')) {
+                for (const q in replies) { if (q.includes('执行')) return replies[q].reply; }
+            }
+            if (msg.includes('你好')||msg.includes('hello')||msg.includes('在吗')) {
+                for (const q in replies) { if (q.includes('你好')) return replies[q].reply; }
+            }
+            return '我是书桥 AI 助手，可以帮你搜索教材、查看撮合、了解平台数据等。\n试试问我："帮我找高等数学"、"平台统计数据"、"查看撮合记录"';
+        }
+        function agentLocalSteps(msg) {
+            const replies = MOCK_DATA.agent_replies;
+            for (const q in replies) {
+                if (msg.includes(q) || q.includes(msg)) return replies[q].steps || [];
+            }
+            return [{type:'think', content:'匹配预设回复'}];
+        }
+
+        // 提示消息
+        function showToast(msg, type = '') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show ' + type;
+            setTimeout(() => t.className = 'toast ' + type, 2500);
+        }
+
+        // ============================================================
+        // 页面初始化：加载所有数据
+        // ============================================================
+        async function initPage() {
+            await Promise.all([
+                loadStats(),
+                loadRealtimeMatches(),
+                loadBooks(),
+                loadCategories()
+            ]);
+        }
+
+        // 加载核心统计数据
+        async function loadStats() {
+            try {
+                const res = await apiGet('/api/match/stats');
+                if (res.code === 200) {
+                    const d = res.data;
+                    document.getElementById('statBooks').innerHTML = d.total_books + '<small> 本</small>';
+                    document.getElementById('statRate').innerHTML = d.match_success_rate + '<small> %</small>';
+                    document.getElementById('statPrice').innerHTML = d.avg_deal_price + '<small> 元</small>';
+                }
+            } catch (e) { console.error('加载统计失败', e); }
+        }
+
+        // 加载实时撮合数据
+        async function loadRealtimeMatches() {
+            try {
+                const res = await apiGet('/api/match/realtime?limit=2');
+                if (res.code === 200 && res.data.items.length > 0) {
+                    const html = res.data.items.map(item => `
+                        <div class="match-item">
+                            <div class="match-item-head">
+                                <div class="match-user">
+                                    <div class="match-avatar">${item.username.charAt(0)}</div>
+                                    <div>
+                                        <div class="match-username">${item.username}</div>
+                                        <div class="match-type">${item.match_type} · 信用 ${item.credit_score}</div>
+                                    </div>
+                                </div>
+                                <span class="book-type-badge ${item.match_type === '出售' ? 'badge-sell' : 'badge-buy'}">${item.match_type}</span>
+                            </div>
+                            <div class="match-book-name">${item.book_title}</div>
+                            <div class="match-details">
+                                <span>${item.price_label}：¥${item.price}</span>
+                                <span class="match-score">匹配度 ${(item.match_score * 100).toFixed(1)}%</span>
+                            </div>
+                            <div class="match-suggest">
+                                <span>💡 成交建议价</span>
+                                <span class="price">¥${item.suggested_price}</span>
+                            </div>
+                            <div class="match-duration">撮合耗时 ${item.duration_ms}ms</div>
+                        </div>
+                    `).join('');
+                    document.getElementById('matchList').innerHTML = html;
+                } else {
+                    document.getElementById('matchList').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">暂无撮合记录</div>';
+                }
+            } catch (e) { console.error('加载撮合失败', e); }
+        }
+
+        // 加载教材列表（默认加载出售教材）
+        async function loadBooks(type = 'sell') {
+            try {
+                const res = await apiGet(`/api/books?page=1&page_size=6&book_type=${type}`);
+                if (res.code === 200 && res.data.items.length > 0) {
+                    const html = res.data.items.map(b => `
+                        <div class="book-item" onclick="showBookDetail(${b.id})">
+                            <div class="book-cover">${b.title.charAt(0)}</div>
+                            <div class="book-info">
+                                <div class="book-title">${b.title}</div>
+                                <div class="book-meta">
+                                    <span>${b.author || '未知作者'}</span>
+                                    <span>${b.course_name || '通用'}</span>
+                                    <span>${b.condition || ''}</span>
+                                </div>
+                            </div>
+                            <span class="book-type-badge ${b.book_type === 'sell' ? 'badge-sell' : 'badge-buy'}">${b.book_type === 'sell' ? '出售' : '求购'}</span>
+                            <div class="book-price">¥${b.price}</div>
+                        </div>
+                    `).join('');
+                    document.getElementById('bookList').innerHTML = html;
+                } else {
+                    document.getElementById('bookList').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">暂无教材数据</div>';
+                }
+            } catch (e) { console.error('加载教材失败', e); }
+        }
+
+        // 加载学科分类
+        async function loadCategories() {
+            try {
+                const res = await apiGet('/api/books/categories/all');
+                if (res.code === 200) {
+                    const cards = document.querySelectorAll('.category-card');
+                    const catMap = {};
+                    res.data.forEach(c => catMap[c.category] = c.count);
+                    const catNames = ['数学', '计算机', '经济学', '物理', '化学', '外语'];
+                    cards.forEach((card, i) => {
+                        const name = catNames[i];
+                        const count = catMap[name] || 0;
+                        card.querySelector('.cat-count').textContent = count + ' 本';
+                    });
+                }
+            } catch (e) { console.error('加载分类失败', e); }
+        }
+
+        // ============================================================
+        // 交互事件处理
+        // ============================================================
+        // 搜索
+        async function doSearch() {
+            const kw = document.getElementById('searchInput').value.trim();
+            if (!kw) { showToast('请输入搜索关键词', 'error'); return; }
+            try {
+                const res = await apiGet(`/api/books/search?keyword=${encodeURIComponent(kw)}&page=1&page_size=10`);
+                if (res.code === 200 && res.data.items.length > 0) {
+                    const html = res.data.items.map(b => `
+                        <div class="book-item" onclick="showBookDetail(${b.id})">
+                            <div class="book-cover">${b.title.charAt(0)}</div>
+                            <div class="book-info">
+                                <div class="book-title">${b.title}</div>
+                                <div class="book-meta">
+                                    <span>${b.author || '未知'}</span>
+                                    <span>${b.course_name || '通用'}</span>
+                                    <span>${b.condition || ''}</span>
+                                </div>
+                            </div>
+                            <span class="book-type-badge ${b.book_type === 'sell' ? 'badge-sell' : 'badge-buy'}">${b.book_type === 'sell' ? '出售' : '求购'}</span>
+                            <div class="book-price">¥${b.price}</div>
+                        </div>
+                    `).join('');
+                    document.getElementById('bookList').innerHTML = html;
+                    showToast(`找到 ${res.data.total} 条结果`, 'success');
+                } else {
+                    document.getElementById('bookList').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">未找到相关教材</div>';
+                    showToast('未找到相关教材', 'error');
+                }
+            } catch (e) { showToast('搜索失败', 'error'); }
+        }
+
+        // 快捷搜索
+        function quickSearch(e, kw) {
+            e.preventDefault();
+            document.getElementById('searchInput').value = kw;
+            doSearch();
+        }
+
+        // 分类筛选
+        async function filterByCategory(cat) {
+            try {
+                const res = await apiGet(`/api/books?page=1&page_size=10&category=${encodeURIComponent(cat)}`);
+                if (res.code === 200) {
+                    const html = res.data.items.map(b => `
+                        <div class="book-item" onclick="showBookDetail(${b.id})">
+                            <div class="book-cover">${b.title.charAt(0)}</div>
+                            <div class="book-info">
+                                <div class="book-title">${b.title}</div>
+                                <div class="book-meta"><span>${b.author || ''}</span><span>${b.condition || ''}</span></div>
+                            </div>
+                            <span class="book-type-badge ${b.book_type === 'sell' ? 'badge-sell' : 'badge-buy'}">${b.book_type === 'sell' ? '出售' : '求购'}</span>
+                            <div class="book-price">¥${b.price}</div>
+                        </div>
+                    `).join('');
+                    document.getElementById('bookList').innerHTML = html || '<div style="text-align:center;padding:30px;color:var(--text-muted);">该分类暂无教材</div>';
+                    showToast(`已筛选「${cat}」分类`, 'success');
+                }
+            } catch (e) { showToast('筛选失败', 'error'); }
+        }
+
+        // 查看全部
+        function loadAllBooks(e) { e.preventDefault(); loadBooks('sell'); showToast('已加载全部教材', 'success'); }
+
+        // 教材详情
+        async function showBookDetail(id) {
+            try {
+                const res = await apiGet(`/api/books/${id}`);
+                if (res.code === 200) {
+                    const b = res.data;
+                    showToast(`${b.title} | ${b.author || ''} | ¥${b.price} | ${b.condition || ''}`, 'success');
+                }
+            } catch (e) { showToast('查询失败', 'error'); }
+        }
+
+        // 导航点击
+        function navClick(e, tab) {
+            e.preventDefault();
+            document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+            e.target.classList.add('active');
+            if (tab === 'category') { document.querySelector('.category-section').scrollIntoView({ behavior: 'smooth' }); }
+            else if (tab === 'featured') { document.querySelector('.stats-section').scrollIntoView({ behavior: 'smooth' }); }
+        }
+        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+        // ============================================================
+        // 弹窗控制
+        // ============================================================
+        function showPublishModal() { document.getElementById('publishModal').classList.add('show'); }
+        function showLoginModal() { document.getElementById('loginModal').classList.add('show'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+        // 发布类型切换时更新价格标签
+        document.getElementById('pubType').addEventListener('change', function() {
+            document.getElementById('priceLabel').textContent = this.value === 'sell' ? '标价（元）' : '预算上限（元）';
+        });
+
+        // 提交发布
+        async function submitPublish() {
+            const data = {
+                user_id: currentUser ? currentUser.user_id : 1,
+                title: document.getElementById('pubTitle').value.trim(),
+                author: document.getElementById('pubAuthor').value.trim() || null,
+                isbn: document.getElementById('pubIsbn').value.trim() || null,
+                course_name: document.getElementById('pubCourse').value.trim() || null,
+                category: document.getElementById('pubCategory').value,
+                price: parseFloat(document.getElementById('pubPrice').value),
+                book_type: document.getElementById('pubType').value,
+                condition: document.getElementById('pubCondition').value,
+                description: document.getElementById('pubDesc').value.trim() || null,
+            };
+            if (!data.title || !data.price) { showToast('请填写教材名称和价格', 'error'); return; }
+            try {
+                const res = await apiPost('/api/books', data);
+                if (res.code === 200) {
+                    showToast('发布成功！', 'success');
+                    closeModal('publishModal');
+                    loadBooks();
+                    loadStats();
+                } else { showToast(res.message || '发布失败', 'error'); }
+            } catch (e) { showToast('发布失败，请检查后端服务', 'error'); }
+        }
+
+        // 提交登录
+        async function submitLogin() {
+            const data = {
+                username: document.getElementById('loginUser').value.trim(),
+                password: document.getElementById('loginPass').value.trim(),
+            };
+            if (!data.username || !data.password) { showToast('请输入用户名和密码', 'error'); return; }
+            try {
+                const res = await apiPost('/api/users/login', data);
+                if (res.code === 200) {
+                    currentUser = res.data;
+                    showToast(`欢迎回来，${currentUser.username}！`, 'success');
+                    closeModal('loginModal');
+                } else { showToast(res.message || '登录失败', 'error'); }
+            } catch (e) { showToast('登录失败，请检查后端服务', 'error'); }
+        }
+
+        // 点击遮罩关闭弹窗
+        document.querySelectorAll('.modal-overlay').forEach(m => {
+            m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+        });
+
+        // ============================================================
+        // AI Agent 聊天浮窗逻辑
+        // ============================================================
+        let agentSessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        let agentBusy = false;
+
+        const AGENT_WELCOME_HTML = `<div class="agent-welcome">
+            <div class="icon">🤖</div>
+            <div>你好！我是书桥 AI 助手<br>可以帮你搜索教材、查看撮合、了解平台数据等</div>
+            <div class="hint">试试以下问题：</div>
+            <div class="quick-btns">
+                <button onclick="agentQuickAsk('帮我找高等数学的教材')">找高等数学</button>
+                <button onclick="agentQuickAsk('平台统计数据')">平台统计</button>
+                <button onclick="agentQuickAsk('查看撮合记录')">撮合记录</button>
+                <button onclick="agentQuickAsk('有哪些学科分类')">学科分类</button>
+                <button onclick="agentQuickAsk('执行撮合')">执行撮合</button>
+            </div>
+        </div>`;
+
+        function toggleAgentPanel() {
+            const panel = document.getElementById('agentPanel');
+            panel.classList.toggle('show');
+            if (panel.classList.contains('show')) {
+                loadAgentStatus();
+                setTimeout(() => document.getElementById('agentInput').focus(), 300);
+            }
+        }
+
+        async function loadAgentStatus() {
+            try {
+                const res = await apiGet('/api/agent/status');
+                if (res.code === 200) {
+                    const tag = document.getElementById('agentModeTag');
+                    if (res.data.llm_available) {
+                        tag.textContent = 'AI 模式';
+                        tag.style.background = 'rgba(16,185,129,0.3)';
+                    } else {
+                        tag.textContent = '离线模式';
+                        tag.style.background = 'rgba(255,255,255,0.25)';
+                    }
+                }
+            } catch (e) { }
+        }
+
+        function agentQuickAsk(text) {
+            document.getElementById('agentInput').value = text;
+            sendAgentMessage();
+        }
+
+        async function sendAgentMessage() {
+            if (agentBusy) return;
+            const input = document.getElementById('agentInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            agentBusy = true;
+            document.getElementById('agentSendBtn').disabled = true;
+
+            // 渲染用户消息
+            renderAgentMessage('user', text, null);
+
+            // 显示 typing 指示器
+            const messagesEl = document.getElementById('agentMessages');
+            const typingEl = document.createElement('div');
+            typingEl.className = 'agent-typing';
+            typingEl.id = 'agentTyping';
+            typingEl.innerHTML = '<span></span><span></span><span></span>';
+            messagesEl.appendChild(typingEl);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+
+            // 调用 Agent 接口
+            try {
+                const res = await apiPost('/api/agent/chat', {
+                    message: text,
+                    session_id: agentSessionId,
+                });
+                // 移除 typing
+                const t = document.getElementById('agentTyping');
+                if (t) t.remove();
+
+                if (res.code === 200 || res.reply) {
+                    renderAgentMessage('agent', res.reply, res.steps || []);
+                    // 更新模式标签
+                    const tag = document.getElementById('agentModeTag');
+                    if (res.mode === 'llm') {
+                        tag.textContent = 'AI 模式';
+                        tag.style.background = 'rgba(16,185,129,0.3)';
+                    }
+                } else {
+                    renderAgentMessage('agent', '抱歉，处理出错了：' + (res.message || '未知错误'), []);
+                }
+            } catch (e) {
+                const t = document.getElementById('agentTyping');
+                if (t) t.remove();
+                renderAgentMessage('agent', '网络错误，请确认后端服务已启动。', []);
+            } finally {
+                agentBusy = false;
+                document.getElementById('agentSendBtn').disabled = false;
+            }
+        }
+
+        function renderAgentMessage(role, text, steps) {
+            const messagesEl = document.getElementById('agentMessages');
+            const msgEl = document.createElement('div');
+            msgEl.className = 'msg ' + role;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            bubble.innerHTML = renderMarkdown(text);
+            msgEl.appendChild(bubble);
+
+            // 渲染思考过程（仅 Agent 消息且有步骤时）
+            if (role === 'agent' && steps && steps.length > 0) {
+                const stepsEl = document.createElement('details');
+                stepsEl.className = 'msg-steps';
+                stepsEl.innerHTML = '<summary>🧠 思考过程（' + steps.length + ' 步）</summary>' + renderSteps(steps);
+                msgEl.appendChild(stepsEl);
+            }
+
+            messagesEl.appendChild(msgEl);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function renderMarkdown(text) {
+            // 轻义 HTML
+            let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            // 加粗 **text**
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            return html;
+        }
+
+        function renderSteps(steps) {
+            return steps.map(s => {
+                let icon = '💭', cls = 'step-think';
+                if (s.type === 'tool_call') { icon = '🔧'; cls = 'step-tool'; }
+                else if (s.type === 'observation') { icon = '✅'; cls = 'step-obs'; }
+                const toolInfo = s.tool ? ` <strong>[${s.tool}]</strong>` : '';
+                return `<div class="step-item ${cls}"><span class="step-icon">${icon}</span>${toolInfo} ${escapeHtml(s.content || '')}</div>`;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        async function clearAgentMemory() {
+            try {
+                await apiPost('/api/agent/clear', { session_id: agentSessionId });
+                document.getElementById('agentMessages').innerHTML = AGENT_WELCOME_HTML;
+                showToast('对话记忆已清除', 'success');
+            } catch (e) {
+                showToast('清除失败', 'error');
+            }
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>

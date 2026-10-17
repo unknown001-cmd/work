@@ -1,0 +1,27 @@
+services:
+  app:
+    build: .
+    container_name: bookbridge-app
+    restart: always
+    expose:
+      - "8000"
+    volumes:
+      - db-data:/app/backend/data
+    environment:
+      - DATABASE_URL=sqlite:///./data/book_bridge.db
+      - ZHIPUAI_API_KEY=${ZHIPUAI_API_KEY:-}
+      - ZHIPUAI_MODEL=${ZHIPUAI_MODEL:-glm-4-flash}
+
+  nginx:
+    image: nginx:alpine
+    container_name: bookbridge-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+
+volumes:
+  db-data:
